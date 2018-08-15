@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 import tensorlayer as tl
 import net.af as af
 
