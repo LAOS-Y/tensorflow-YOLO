@@ -60,12 +60,16 @@ class Net():
 
 		with tf.variable_scope("Classes"):
 			self.classes = self.y[:, :, :, :20]
+			self.classes = tf.nn.softmax(self.classes)
 
 		with tf.variable_scope("Confidence"):
 			self.confidence = self.y[:, :, :, 20:22]
 
 		with tf.variable_scope("Box"):
 			self.box = tf.reshape(self.y[:, :, :, 22:], [-1, 7, 7, 2, 4])
+			box_xy = tf.nn.sigmoid(self.box[:, :, :, :, :2])
+			box_wh = tf.nn.relu(self.box[:, :, :, :, 2:])
+			self.box = tf.concat([box_xy, box_wh], axis = 4)
 
 		with tf.variable_scope("Loss"):
 			lambda_coord = 5.0
@@ -86,6 +90,7 @@ class Net():
 			with tf.variable_scope("Mask"):
 				mask_obj = tf.reduce_max(box_iou, axis = 3, keepdims = True)
 				mask_obj = tf.cast((box_iou >= mask_obj), tf.float32)
+				mask_obj = confidence_hat * mask_obj
 				mask_noobj = tf.ones_like(mask_obj) - mask_obj
 
 			with tf.variable_scope("Loss_coor"):
@@ -96,11 +101,11 @@ class Net():
 																						+ tf.squared_difference(tf.sqrt(self.box[:, :, :, :, 3]), tf.sqrt(box_hat[:, :, :, :, 3]), name = "diff_h")),
 																			axis = [1, 2, 3]))
 			with tf.variable_scope("Loss_confidence"):
-				self.loss_confidence = lambda_coord * tf.reduce_mean(tf.reduce_sum(mask_obj * tf.squared_difference(self.confidence, confidence_hat, name = "obj"), axis = [1, 2, 3]))
+				self.loss_confidence = tf.reduce_mean(tf.reduce_sum(mask_obj * tf.squared_difference(self.confidence, confidence_hat, name = "obj"), axis = [1, 2, 3]))
 				self.loss_confidence += lambda_noobj * tf.reduce_mean(tf.reduce_sum(mask_noobj * tf.squared_difference(self.confidence, confidence_hat, name = "noobj"), axis = [1, 2, 3]))
 
 			with tf.variable_scope("Loss_Classes"):
-				self.loss_classes = tf.reduce_mean(tf.reduce_sum(tf.squared_difference(self.classes, classes_hat), axis = [1, 2, 3]))
+				self.loss_classes = tf.reduce_mean(tf.reduce_sum(tf.reshape(confidence_hat[:, :, :, 0], [-1, 7, 7, 1]) * tf.squared_difference(self.classes, classes_hat), axis = [1, 2, 3]))
 
 			self.loss = self.loss_coor + self.loss_confidence + self.loss_classes
 
@@ -108,9 +113,5 @@ class Net():
 			tf.summary.scalar('loss_confidence', self.loss_confidence)
 			tf.summary.scalar('loss_classes', self.loss_classes)
 			tf.summary.scalar('loss_total', self.loss)
-
-		with tf.Session() as sess:
-			writer = tf.summary.FileWriter('./graph', sess.graph)
-			writer.close()
 
 #net = Net()

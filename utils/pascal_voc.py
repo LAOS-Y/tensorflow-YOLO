@@ -6,7 +6,6 @@ import pickle
 import copy
 import config as cfg
 
-
 class pascal_voc(object):
     def __init__(self, phase, rebuild=False):
         self.devkil_path = os.path.join(cfg.PASCAL_PATH, 'VOCdevkit')
@@ -71,6 +70,7 @@ class pascal_voc(object):
             gt_labels += gt_labels_cp
         np.random.shuffle(gt_labels)
         self.gt_labels = gt_labels
+        self.num_image = len(self.gt_labels)
         return gt_labels
 
     def load_labels(self):
@@ -139,7 +139,7 @@ class pascal_voc(object):
             boxes = [(x2 + x1) / 2.0, (y2 + y1) / 2.0, x2 - x1, y2 - y1]
             x_ind = int(boxes[0] * self.cell_size / self.image_size)
             y_ind = int(boxes[1] * self.cell_size / self.image_size)
-            cell_width = self.image_size /  self.cell_size
+            cell_width = self.image_size / self.cell_size
             boxes[0] = (boxes[0] - x_ind * cell_width) / cell_width
             boxes[1] = (boxes[1] - y_ind * cell_width) / cell_width
             boxes[2], boxes[3] = boxes[2] / cell_width, boxes[3] / cell_width
@@ -148,5 +148,4 @@ class pascal_voc(object):
             label[x_ind, y_ind, 20] = 1
             label[x_ind, y_ind, 21:25] = boxes
             label[x_ind, y_ind, cls_ind] = 1
-
         return label, len(objs)
