@@ -116,7 +116,6 @@ class pascal_voc(object):
         Load image and bounding boxes info from XML file in the PASCAL VOC
         format.
         """
-
         imname = os.path.join(self.data_path, 'JPEGImages', index + '.jpg')
         im = cv2.imread(imname)
         h_ratio = 1.0 * self.image_size / im.shape[0]
@@ -127,6 +126,7 @@ class pascal_voc(object):
         filename = os.path.join(self.data_path, 'Annotations', index + '.xml')
         tree = ET.parse(filename)
         objs = tree.findall('object')
+        cell_width = self.image_size / self.cell_size
 
         for obj in objs:
             bbox = obj.find('bndbox')
@@ -137,15 +137,14 @@ class pascal_voc(object):
             y2 = max(min((float(bbox.find('ymax').text) - 1) * h_ratio, self.image_size - 1), 0)
             cls_ind = self.class_to_ind[obj.find('name').text.lower().strip()]
             boxes = [(x2 + x1) / 2.0, (y2 + y1) / 2.0, x2 - x1, y2 - y1]
-            x_ind = int(boxes[0] * self.cell_size / self.image_size)
-            y_ind = int(boxes[1] * self.cell_size / self.image_size)
-            cell_width = self.image_size / self.cell_size
-            boxes[0] = (boxes[0] - x_ind * cell_width) / cell_width
-            boxes[1] = (boxes[1] - y_ind * cell_width) / cell_width
+            x_ind = int(boxes[0] / cell_width)
+            y_ind = int(boxes[1] / cell_width)
+            boxes[0] = boxes[0] / cell_width - x_ind
+            boxes[1] = boxes[1] / cell_width - y_ind
             boxes[2], boxes[3] = boxes[2] / cell_width, boxes[3] / cell_width
-            if label[x_ind, y_ind, 20] == 1:
+            if label[y_ind, x_ind, 0] == 1:
                 continue
-            label[x_ind, y_ind, 20] = 1
-            label[x_ind, y_ind, 21:25] = boxes
-            label[x_ind, y_ind, cls_ind] = 1
+            label[y_ind, x_ind, 0] = 1
+            label[y_ind, x_ind, 1:5] = boxes
+            label[y_ind, x_ind, 5 + cls_ind] = 1
         return label, len(objs)
