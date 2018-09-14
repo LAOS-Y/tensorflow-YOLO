@@ -1,25 +1,28 @@
 import os
 
 LEARNING_RATE = 0.000001
-DECAY_STEPS = 30000
+DECAY_STEPS = 20000
 DECAY_RATE = 0.1
 STAIRCASE = True
 BATCH_SIZE = 5
-MAX_ITER = 2
-SUMMARY_ITER = 1
-PRINT_ITER = 1
-SAVE_ITER = 10
+MAX_ITER = 25000
+SUMMARY_ITER = 10
+PRINT_ITER = 100
+SAVE_ITER = 1000
 
-DATA_PATH = 'data'
+DATA_PATH = './data'
 
 PASCAL_PATH = os.path.join(DATA_PATH, 'pascal_voc')
 
 CACHE_PATH = os.path.join(PASCAL_PATH, 'cache')
 
 #OUTPUT_DIR = os.path.join(PASCAL_PATH, 'output')
-OUTPUT_DIR = './output'
+OUTPUT_DIR = '/output'
+SAVE_DIR = './saved_model'
 
-WEIGHTS_DIR = os.path.join(PASCAL_PATH, 'weights')
+WEIGHTS_DIR = os.path.join(DATA_PATH, 'weights')
+
+WEIGHTS_FILE = 'yolo.ckpt'
 
 CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
 			'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',

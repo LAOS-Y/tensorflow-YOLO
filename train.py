@@ -2,6 +2,7 @@ import config as cfg
 import tensorflow as tf
 import itchat
 import datetime
+import os
 from tqdm import tqdm
 
 class Solver():
@@ -33,8 +34,9 @@ class Solver():
 		self.writer = tf.summary.FileWriter(self.output_dir)
 
 		self.save_iter = cfg.SAVE_ITER
+		self.save_dir = cfg.SAVE_DIR
 		self.save_cfg()
-		self.ckpt_file = os.path.join(self.output_dir, 'yolo')
+		self.ckpt_file = os.path.join(self.save_dir, 'yolo.ckpt')
 		self.variable_to_restore = tf.global_variables()
 		self.saver = tf.train.Saver(self.variable_to_restore, max_to_keep=None)
 
@@ -47,10 +49,11 @@ class Solver():
 			if init:
 				sess.run(tf.global_variables_initializer())
 				print("INIT DONE")
-			else
-				self.weights_file = cfg.WEIGHTS_FILE
+			else:
+				self.weights_file = os.path.join(cfg.WEIGHTS_DIR, cfg.WEIGHTS_FILE)
 				print('Restoring weights from: ' + self.weights_file)
-				self.saver.restore(self.sess, self.weights_file)
+				self.saver.restore(sess, self.weights_file)
+
 			for i in tqdm(range(self.max_iter)):
 				X_train, y_train = self.data.get()
 				feed_dict = {self.model.X: X_train, self.model.y_hat: y_train}
@@ -70,10 +73,10 @@ class Solver():
 						self.train_op], feed_dict = feed_dict)
 					self.writer.add_summary(summary, i)
 
-				if step % self.save_iter == 0:
+				if i % self.save_iter == 0:
 					print('{} Saving checkpoint file to: {}'.format(
 						datetime.datetime.now().strftime('%m-%d %H:%M:%S'),
-						self.output_dir))
+						self.save_dir))
 					self.saver.save(sess, self.ckpt_file, global_step=self.global_step)
 
 				if (i % self.print_iter == 0):
