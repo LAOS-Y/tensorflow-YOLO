@@ -14,6 +14,6 @@ data = utils.pascal_voc("train", rebuild = False)
 
 print("Begin")
 
-solver = train.Solver(net, data, wechat = True)
+solver = train.Solver(net, data, wechat = False)
 
 solver.train()
