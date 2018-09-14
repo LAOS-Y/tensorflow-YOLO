@@ -59,7 +59,7 @@ class Net():
 			print(type(self.y))
 
 		with tf.variable_scope("Confidence"):
-			self.confidence = self.y[:, :, :, :2]
+			self.confidence = tf.sigmoid(self.y[:, :, :, :2])
 
 		with tf.variable_scope("Box"):
 			self.box = self.y[:, :, :, 2:10]
