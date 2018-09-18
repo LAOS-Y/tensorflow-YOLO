@@ -6,7 +6,7 @@ import pickle
 import copy
 import config as cfg
 
-class pascal_voc(object):
+class PASCAL_VOC(object):
     def __init__(self, phase, rebuild=False):
         self.devkil_path = os.path.join(cfg.PASCAL_PATH, 'VOCdevkit')
         self.data_path = os.path.join(self.devkil_path, 'VOC2007')
