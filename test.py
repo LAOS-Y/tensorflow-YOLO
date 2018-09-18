@@ -10,7 +10,7 @@ import train
 
 net = model.Net()
 
-data = utils.pascal_voc("train", rebuild = False)
+data = utils.PASCAL_VOC("train", rebuild = False)
 
 print("Begin")
 

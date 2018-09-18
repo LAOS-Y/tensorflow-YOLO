@@ -33,12 +33,13 @@ class Solver():
 		self.summary_op = tf.summary.merge_all()
 		self.writer = tf.summary.FileWriter(self.output_dir)
 
+		print('fuck', datetime.datetime.now().strftime('%m-%d %H:%M:%S'))
 		self.save_iter = cfg.SAVE_ITER
-		self.save_dir = cfg.SAVE_DIR
+		self.save_dir = os.path.join(cfg.SAVE_DIR, datetime.datetime.now().strftime('%m-%d_%H:%M:%S'))
+		os.makedirs(self.save_dir)
 		self.save_cfg()
 		self.ckpt_file = os.path.join(self.save_dir, 'yolo.ckpt')
-		self.variable_to_restore = tf.global_variables()
-		self.saver = tf.train.Saver(self.variable_to_restore, max_to_keep=None)
+		self.saver = tf.train.Saver()
 
 		self.wechat = wechat
 		if wechat:
@@ -54,11 +55,13 @@ class Solver():
 				print('Restoring weights from: ' + self.weights_file)
 				self.saver.restore(sess, self.weights_file)
 
+			current_epoch = 0
+
 			for i in tqdm(range(self.max_iter)):
 				X_train, y_train = self.data.get()
 				feed_dict = {self.model.X: X_train, self.model.y_hat: y_train}
 				
-				if (i % self.summary_iter != 0):
+				if (self.summary_iter > 0) and (i % self.summary_iter != 0):
 					loss, loss_coor, loss_iou, loss_classes, _ = sess.run([self.model.loss,
 						self.model.loss_coor,
 						self.model.loss_iou,
@@ -73,32 +76,42 @@ class Solver():
 						self.train_op], feed_dict = feed_dict)
 					self.writer.add_summary(summary, i)
 
-				if i % self.save_iter == 0:
+				if (self.save_iter <= 0 ) or (i % self.save_iter == 0):
 					print('{} Saving checkpoint file to: {}'.format(
 						datetime.datetime.now().strftime('%m-%d %H:%M:%S'),
 						self.save_dir))
 					self.saver.save(sess, self.ckpt_file, global_step=self.global_step)
 
-				if (i % self.print_iter == 0):
-					print("Iter#", i)
-					print("learning_rate:", self.learning_rate.eval())
-					print("loss:", loss)
-					print("loss_coor: ", loss_coor)
-					print("loss_iou: ", loss_iou)
-					print("loss_classes: ", loss_classes)
+				text = 'learning_rate: {}\n'.format(self.learning_rate.eval()) + 'loss: {}\n'.format(loss) + 'loss_coor: {}\n'.format(loss_coor) + 'loss_iou: {}\n'.format(loss_iou) + 'loss_classes: {}\n'.format(loss_classes)
 
+				if current_epoch != self.data.epoch:
+					print("epoch#", current_epoch)
+					print(text)
 					if self.wechat:
-						itchat.send('Iter#{}\n'.format(i)
-									+ 'learning_rate: {}\n'.format(self.learning_rate.eval())
-									+ 'loss: {}\n'.format(loss)
-									+ 'loss_coor: {}\n'.format(loss_coor)
-									+ 'loss_iou: {}\n'.format(loss_iou)
-									+ 'loss_classes: {}\n'.format(loss_classes), toUserName='filehelper')
+						itchat.send('epoch#{}\n'.format(current_epoch) + text, toUserName='filehelper')
+					
+					current_epoch = self.data.epoch
+					print('{} Saving checkpoint file to: {}'.format(
+							datetime.datetime.now().strftime('%m-%d %H:%M:%S'),
+							self.save_dir))
+					self.saver.save(sess, self.ckpt_file, global_step=self.global_step)
+
+				if (self.print_iter <= 0 ) or (i % self.print_iter == 0):
+					print("Iter#", i)
+					print(text)
+					if self.wechat:
+						itchat.send('Iter#{}\n'.format(i) + text, toUserName='filehelper')
+			
+			print('{} Saving checkpoint file to: {}'.format(
+						datetime.datetime.now().strftime('%m-%d %H:%M:%S'),
+						self.save_dir))
+			self.saver.save(sess, self.ckpt_file, global_step=self.global_step)
+
 			if self.wechat:
 				itchat.send('DONE TRAINING', toUserName='filehelper')
 
 	def save_cfg(self):
-		with open(os.path.join(self.output_dir, 'config.txt'), 'w') as f:
+		with open(os.path.join(self.save_dir, 'config.txt'), 'w') as f:
 			cfg_dict = cfg.__dict__
 			for key in sorted(cfg_dict.keys()):
 				if key[0].isupper():
