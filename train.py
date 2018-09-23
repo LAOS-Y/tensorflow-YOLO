@@ -14,20 +14,24 @@ class Solver():
 		self.summary_iter = cfg.SUMMARY_ITER
 		self.print_iter = cfg.PRINT_ITER
 
-		self.initial_learning_rate = cfg.LEARNING_RATE
-		self.decay_rate = cfg.DECAY_RATE
-		self.decay_steps = cfg.DECAY_STEPS
-		self.staircase = cfg.STAIRCASE
+		self.learning_rate = cfg.LEARNING_RATE
+		#self.decay_rate = cfg.DECAY_RATE
+		#self.decay_steps = cfg.DECAY_STEPS
+		#self.staircase = cfg.STAIRCASE
 		self.global_step = tf.train.create_global_step()
-		self.learning_rate = tf.train.exponential_decay(self.initial_learning_rate,
-			self.global_step,
-			self.decay_steps,
-			self.decay_rate,
-			self.staircase,
-			name='learning_rate')
+		#self.learning_rate = tf.train.exponential_decay(self.initial_learning_rate,
+		#	self.global_step,
+		#	self.decay_steps,
+		#	self.decay_rate,
+		#	self.staircase,
+		#	name='learning_rate')
+
+		self.epsilon = cfg.EPSILON
 		
-		self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate)
-		self.train_op = self.optimizer.minimize(self.model.loss, global_step = self.global_step)
+		self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate, epsilon = self.epsilon)
+		grads, variables = zip(*self.optimizer.compute_gradients(self.model.loss))
+		grads, global_norm = tf.clip_by_global_norm(grads, 5)
+		self.train_op = self.optimizer.apply_gradients(zip(grads, variables))
 		
 		self.output_dir = cfg.OUTPUT_DIR
 		self.summary_op = tf.summary.merge_all()
@@ -82,21 +86,23 @@ class Solver():
 						self.save_dir))
 					self.saver.save(sess, self.ckpt_file, global_step=self.global_step)
 
-				text = 'learning_rate: {}\n'.format(self.learning_rate.eval()) + 'loss: {}\n'.format(loss) + 'loss_coor: {}\n'.format(loss_coor) + 'loss_iou: {}\n'.format(loss_iou) + 'loss_classes: {}\n'.format(loss_classes)
-
-				if current_epoch != self.data.epoch:
-					print("epoch#", current_epoch)
-					print(text)
-					if self.wechat:
-						itchat.send('epoch#{}\n'.format(current_epoch) + text, toUserName='filehelper')
+				text = 'loss: {}\n'.format(loss) + 'loss_coor: {}\n'.format(loss_coor) + 'loss_iou: {}\n'.format(loss_iou) + 'loss_classes: {}\n'.format(loss_classes)
+				#'learning_rate: {}\n'.format(self.learning_rate.eval()) + 
+				#if current_epoch != self.data.epoch:
+				#	print("epoch#", current_epoch)
+				#	print("Iter#", i)
+				#	print(text)
+				#	if self.wechat:
+				#		itchat.send('epoch#{}\n'.format(current_epoch) + text, toUserName='filehelper')
 					
-					current_epoch = self.data.epoch
-					print('{} Saving checkpoint file to: {}'.format(
-							datetime.datetime.now().strftime('%m-%d %H:%M:%S'),
-							self.save_dir))
-					self.saver.save(sess, self.ckpt_file, global_step=self.global_step)
+				#	current_epoch = self.data.epoch
+				#	print('{} Saving checkpoint file to: {}'.format(
+				#			datetime.datetime.now().strftime('%m-%d %H:%M:%S'),
+				#			self.save_dir))
+				#	self.saver.save(sess, self.ckpt_file, global_step=self.global_step)
 
 				if (self.print_iter <= 0 ) or (i % self.print_iter == 0):
+					print("epoch#", self.data.epoch)
 					print("Iter#", i)
 					print(text)
 					if self.wechat:

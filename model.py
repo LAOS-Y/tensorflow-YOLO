@@ -13,56 +13,56 @@ class Net():
 			input_layer = tl.layers.InputLayer(self.X)
 
 		with tf.variable_scope("Layer1"):
-			conv_layer = conv(input_layer, 64, (7, 7), (2, 2), "conv1")
-			pool_layer = maxpool(conv_layer, "pool1")
+			conv_bn_layer = conv_bn(input_layer, 64, (7, 7), (2, 2), "conv_bn1")
+			pool_layer = maxpool(conv_bn_layer, "pool1")
 
 		with tf.variable_scope("Layer2"):
-			conv_layer = conv(pool_layer, 192, (3, 3), (1, 1), "conv2")
-			pool_layer = maxpool(conv_layer, "pool2")
+			conv_bn_layer = conv_bn(pool_layer, 192, (3, 3), (1, 1), "conv_bn2")
+			pool_layer = maxpool(conv_bn_layer, "pool2")
 
 		with tf.variable_scope("Layer3"):
-			conv_layer = conv(pool_layer, 128, (1, 1), (1, 1), "conv3")
-			conv_layer = conv(conv_layer, 256, (3, 3), (1, 1), "conv4")
-			conv_layer = conv(conv_layer, 256, (1, 1), (1, 1), "conv5")
-			conv_layer = conv(conv_layer, 512, (3, 3), (1, 1), "conv6")
-			pool_layer = maxpool(conv_layer, "pool3")
+			conv_bn_layer = conv_bn(pool_layer, 128, (1, 1), (1, 1), "conv_bn3")
+			conv_bn_layer = conv_bn(conv_bn_layer, 256, (3, 3), (1, 1), "conv_bn4")
+			conv_bn_layer = conv_bn(conv_bn_layer, 256, (1, 1), (1, 1), "conv_bn5")
+			conv_bn_layer = conv_bn(conv_bn_layer, 512, (3, 3), (1, 1), "conv_bn6")
+			pool_layer = maxpool(conv_bn_layer, "pool3")
 
 		with tf.variable_scope("Layer4"):
-			conv_layer = pool_layer
+			conv_bn_layer = pool_layer
 			for i in range(4):
-				conv_layer = conv(conv_layer, 256, (1, 1), (1, 1), "conv%d"%(7 + i * 2))
-				conv_layer = conv(conv_layer, 512, (3, 3), (1, 1), "conv%d"%(8 + i * 2))
-			conv_layer = conv(conv_layer, 512, (1, 1), (1, 1), "conv15")
-			conv_layer = conv(conv_layer, 1024, (3, 3), (1, 1), "conv16")
-			pool_layer = maxpool(conv_layer, "pool4")
+				conv_bn_layer = conv_bn(conv_bn_layer, 256, (1, 1), (1, 1), "conv_bn%d"%(7 + i * 2))
+				conv_bn_layer = conv_bn(conv_bn_layer, 512, (3, 3), (1, 1), "conv_bn%d"%(8 + i * 2))
+			conv_bn_layer = conv_bn(conv_bn_layer, 512, (1, 1), (1, 1), "conv_bn15")
+			conv_bn_layer = conv_bn(conv_bn_layer, 1024, (3, 3), (1, 1), "conv_bn16")
+			pool_layer = maxpool(conv_bn_layer, "pool4")
 
 		with tf.variable_scope("Layer5"):
-			conv_layer = pool_layer
+			conv_bn_layer = pool_layer
 			for i in range(2):
-				conv_layer = conv(conv_layer, 512, (1, 1), (1, 1), "conv%d"%(17 + i * 2))
-				conv_layer = conv(conv_layer, 1024, (3, 3), (1, 1), "conv%d"%(18 + i * 2))
+				conv_bn_layer = conv_bn(conv_bn_layer, 512, (1, 1), (1, 1), "conv_bn%d"%(17 + i * 2))
+				conv_bn_layer = conv_bn(conv_bn_layer, 1024, (3, 3), (1, 1), "conv_bn%d"%(18 + i * 2))
 
-			conv_layer = conv(conv_layer, 1024, (3, 3), (1, 1), "conv21")
-			conv_layer = conv(conv_layer, 1024, (3, 3), (2, 2), "conv22")
+			conv_bn_layer = conv_bn(conv_bn_layer, 1024, (3, 3), (1, 1), "conv_bn21")
+			conv_bn_layer = conv_bn(conv_bn_layer, 1024, (3, 3), (2, 2), "conv_bn22")
 
 		with tf.variable_scope("Layer6"):
-			conv_layer = conv(conv_layer, 1024, (3, 3), (1, 1), "conv23")
-			conv_layer = conv(conv_layer, 1024, (3, 3), (1, 1), "conv24")
+			conv_bn_layer = conv_bn(conv_bn_layer, 1024, (3, 3), (1, 1), "conv_bn23")
+			conv_bn_layer = conv_bn(conv_bn_layer, 1024, (3, 3), (1, 1), "conv_bn24")
 
 		with tf.variable_scope("Layer7"):
-			dense_layer = dense(flatten(conv_layer, "flatten"), 4096, "dense1")
+			transpose_layer = transpose(conv_bn_layer, [0, 3, 1, 2], "transpose")
+			dense_layer = dense(flatten(transpose_layer, "flatten"), 4096, "dense1")
 
 		with tf.variable_scope("Output"):
-			dense_layer = dense(dense_layer, 7 * 7 *30, "dense2")
-			self.network = reshape(dense_layer, (-1, 7, 7, 30), "reshape1")
+			self.network = dense(dense_layer, 7 * 7 *30, "dense2")
 			self.y = self.network.outputs
-			print(type(self.y))
 
 		with tf.variable_scope("Confidence"):
-			self.confidence = tf.sigmoid(self.y[:, :, :, :2])
-
+			self.confidence = tf.sigmoid(self.y[:, :(7 * 7 * 2)])
+			self.confidence = tf.reshape(self.confidence, [-1, 7, 7, 2])
+			
 		with tf.variable_scope("Box"):
-			self.box = self.y[:, :, :, 2:10]
+			self.box = self.y[:, (7 * 7 * 2):(7 * 7 * 2 * 4 + 7 * 7 * 2)]
 			self.box = tf.reshape(self.box, [-1, 7, 7, 2, 4])
 
 			box_xy = tf.sigmoid(self.box[:, :, :, :, :2])
@@ -70,7 +70,13 @@ class Net():
 			self.box = tf.concat([box_xy, box_wh], axis = 4)
 		
 		with tf.variable_scope("Classes"):
-			self.classes = self.y[:, :, :, 10:]
+			self.classes = self.y[:, (7 * 7 * 2 * 4 + 7 * 7 * 2):]
+			self.classes = tf.reshape(self.classes, [-1, 7, 7, 20])
+
+		with tf.variable_scope("Reshaped_output"):
+			self.y = tf.concat([self.confidence,
+								tf.reshape(self.confidence, [-1, 7, 7, 2 * 4]),
+								self.classes], axis = -1)
 
 		with tf.variable_scope("Confidence_hat"):
 			confidence_hat = self.y_hat[:, :, :, :1]
@@ -87,7 +93,7 @@ class Net():
 		with tf.variable_scope("Loss"):
 			box_iou = iou(self.box, box_hat)
 			mask_obj = tf.reduce_max(box_iou, axis = 3, keepdims = True) <= box_iou
-			mask_obj = tf.cast(mask_obj, tf.float32)
+			mask_obj = tf.cast(mask_obj, tf.float32) * confidence_hat
 			mask_noobj = tf.ones_like(mask_obj) - mask_obj
 			
 			lambda_coord = 5
@@ -107,8 +113,8 @@ class Net():
 				self.loss_iou += lambda_noobj * tf.reduce_mean(tf.reduce_sum(mask_noobj * tf.squared_difference(self.confidence, confidence_hat), axis = [1, 2, 3]))
 			
 			with tf.variable_scope("Loss_classes"):
-				self.loss_classes = tf.reduce_mean(tf.reduce_sum(confidence_hat[:, :, :, :1] * tf.squared_difference(self.classes, classes_hat), axis = [1, 2, 3]))
-
+				#self.loss_classes = tf.reduce_mean(tf.reduce_sum(confidence_hat[:, :, :, :1] * tf.squared_difference(self.classes, classes_hat), axis = [1, 2, 3]))
+				self.loss_classes = tf.reduce_mean(tf.reduce_sum(confidence_hat[:, :, :, 0] * tf.nn.softmax_cross_entropy_with_logits(logits = self.classes, labels = classes_hat), axis = [1, 2]))
 			self.loss = self.loss_coor + self.loss_iou + self.loss_classes
 
 			tf.summary.scalar('loss_coor', self.loss_coor)
