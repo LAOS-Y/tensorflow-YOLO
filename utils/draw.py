@@ -14,9 +14,9 @@ def decodeCoor(coor, isTruth = True):
 	x, y = coor[:, :, 0], coor[:, :, 1]
 	w, h = coor[:, :, 2], coor[:, :, 3]
 	
-	if not isTruth:
-		x, y = math.sigmoid(x), math.sigmoid(y)
-		w, h = np.exp(w), np.exp(h)
+	#if not isTruth:
+	#	x, y = math.sigmoid(x), math.sigmoid(y)
+	#	w, h = np.exp(w), np.exp(h)
 	
 	x = (x + offset_x) * cell_width
 	y = (y + offset_y) * cell_width
