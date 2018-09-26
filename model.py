@@ -75,7 +75,7 @@ class Net():
 
 		with tf.variable_scope("Reshaped_output"):
 			self.y = tf.concat([self.confidence,
-								tf.reshape(self.confidence, [-1, 7, 7, 2 * 4]),
+								tf.reshape(self.box, [-1, 7, 7, 2 * 4]),
 								self.classes], axis = -1)
 
 		with tf.variable_scope("Confidence_hat"):
@@ -113,7 +113,6 @@ class Net():
 				self.loss_iou += lambda_noobj * tf.reduce_mean(tf.reduce_sum(mask_noobj * tf.squared_difference(self.confidence, confidence_hat), axis = [1, 2, 3]))
 			
 			with tf.variable_scope("Loss_classes"):
-				#self.loss_classes = tf.reduce_mean(tf.reduce_sum(confidence_hat[:, :, :, :1] * tf.squared_difference(self.classes, classes_hat), axis = [1, 2, 3]))
 				self.loss_classes = tf.reduce_mean(tf.reduce_sum(confidence_hat[:, :, :, 0] * tf.nn.softmax_cross_entropy_with_logits(logits = self.classes, labels = classes_hat), axis = [1, 2]))
 			self.loss = self.loss_coor + self.loss_iou + self.loss_classes
 
@@ -121,5 +120,3 @@ class Net():
 			tf.summary.scalar('loss_iou', self.loss_iou)
 			tf.summary.scalar('loss_classes', self.loss_classes)
 			tf.summary.scalar('loss_total', self.loss)
-
-#net = Net()

@@ -15,16 +15,7 @@ class Solver():
 		self.print_iter = cfg.PRINT_ITER
 
 		self.learning_rate = cfg.LEARNING_RATE
-		#self.decay_rate = cfg.DECAY_RATE
-		#self.decay_steps = cfg.DECAY_STEPS
-		#self.staircase = cfg.STAIRCASE
 		self.global_step = tf.train.create_global_step()
-		#self.learning_rate = tf.train.exponential_decay(self.initial_learning_rate,
-		#	self.global_step,
-		#	self.decay_steps,
-		#	self.decay_rate,
-		#	self.staircase,
-		#	name='learning_rate')
 
 		self.epsilon = cfg.EPSILON
 		
@@ -87,19 +78,6 @@ class Solver():
 					self.saver.save(sess, self.ckpt_file, global_step=self.global_step)
 
 				text = 'loss: {}\n'.format(loss) + 'loss_coor: {}\n'.format(loss_coor) + 'loss_iou: {}\n'.format(loss_iou) + 'loss_classes: {}\n'.format(loss_classes)
-				#'learning_rate: {}\n'.format(self.learning_rate.eval()) + 
-				#if current_epoch != self.data.epoch:
-				#	print("epoch#", current_epoch)
-				#	print("Iter#", i)
-				#	print(text)
-				#	if self.wechat:
-				#		itchat.send('epoch#{}\n'.format(current_epoch) + text, toUserName='filehelper')
-					
-				#	current_epoch = self.data.epoch
-				#	print('{} Saving checkpoint file to: {}'.format(
-				#			datetime.datetime.now().strftime('%m-%d %H:%M:%S'),
-				#			self.save_dir))
-				#	self.saver.save(sess, self.ckpt_file, global_step=self.global_step)
 
 				if (self.print_iter <= 0 ) or (i % self.print_iter == 0):
 					print("epoch#", self.data.epoch)
